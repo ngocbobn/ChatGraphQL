@@ -6,6 +6,7 @@ import ChatList from '../components/chatList';
 const GET_PUBLIC_CHAT = gql`
 {
     getPublicChat{
+      _id
       userId
       message
     }
@@ -15,7 +16,7 @@ const GET_PUBLIC_CHAT = gql`
 const CREATE_NEW_PUBLIC_MESSAGE = gql`
 mutation CreateNewPublicMessage($message: String!){
     createNewPublicChat(message: $message){
-      id
+      _id
       userId
       message
     }
@@ -25,7 +26,7 @@ mutation CreateNewPublicMessage($message: String!){
 const NEW_PUBLIC_MESSAGE_SUBSCRIPTION = gql`
 subscription{
     createNewPublicChat{
-      id
+      _id
       userId
       message
     }
@@ -47,7 +48,9 @@ class Chat extends Component {
                 debugger
                 const newMessage = subscriptionData.data.createNewPublicChat
                 const data = Object.assign({}, prev)
-                data.getPublicChat.push(newMessage)
+                if (data.getPublicChat.findIndex(x => x._id === newMessage._id) < 0) {
+                    data.getPublicChat.push(newMessage)
+                }
                 return Object.assign({}, prev, data)
             }
         })
@@ -66,13 +69,13 @@ class Chat extends Component {
                     update={(cache, { data: { createNewPublicChat } }) => {
                         debugger
                         const chats = cache.readQuery({ query: GET_PUBLIC_CHAT })
-                        chats.getPublicChat.push({
-                            message: createNewPublicChat.message,
-                            userId: createNewPublicChat.userId
-                        })
+                        if (chats.getPublicChat.findIndex(x => x._id === createNewPublicChat._id) < 0) {
+                            chats.getPublicChat.push(createNewPublicChat)
+                        }
+                        
                     }}
                 >
-                    {mutation => <button type="submit" onClick={mutation}>Send</button>}
+                    {mutationCreateNewMessage => <button type="submit" onClick={mutationCreateNewMessage}>Send</button>}
                 </Mutation>
                 <hr />
                 <Query
